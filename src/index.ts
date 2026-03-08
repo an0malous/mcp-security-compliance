@@ -20,6 +20,12 @@ import {
   listCloudSections,
 } from "./tools/cloud.js";
 import {
+  lookupNistCloudTopic,
+  searchNistCloudTopics,
+  listNistCloudBySource,
+  listNistCloudSources,
+} from "./tools/nist-cloud.js";
+import {
   lookupAttackTechnique,
   searchAttackTechniques,
   attackByNist,
@@ -242,6 +248,95 @@ server.tool(
     const sections = await listCloudSections();
     const summary = sections
       .map((s) => `${s.id} - ${s.name} (${s.controlCount} controls)`)
+      .join("\n");
+    return { content: [{ type: "text", text: summary }] };
+  }
+);
+
+// --- NIST Cloud Guidance Tools ---
+
+server.tool(
+  "nist_cloud_lookup_topic",
+  "Look up a NIST cloud security guidance topic by ID (e.g. SP800-144.4.5, SP800-210.3.1). Returns guidance from NIST SP 800-144, 800-210, or 800-146 with mapped NIST 800-53 controls.",
+  {
+    topic_id: z
+      .string()
+      .describe("Topic ID, e.g. SP800-144.4.5, SP800-210.3.1, SP800-146.9"),
+  },
+  async ({ topic_id }) => {
+    const topic = await lookupNistCloudTopic(topic_id);
+    if (!topic) {
+      return {
+        content: [{ type: "text", text: `Topic ${topic_id} not found.` }],
+      };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(topic, null, 2) }],
+    };
+  }
+);
+
+server.tool(
+  "nist_cloud_search",
+  "Search NIST cloud security guidance (SP 800-144, 800-210, 800-146) by keyword across topic titles and guidance text",
+  {
+    query: z
+      .string()
+      .describe("Search keyword or phrase, e.g. 'multi-tenancy', 'encryption', 'hypervisor'"),
+  },
+  async ({ query }) => {
+    const results = await searchNistCloudTopics(query);
+    if (results.length === 0) {
+      return {
+        content: [
+          { type: "text", text: `No NIST cloud guidance matching "${query}".` },
+        ],
+      };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
+    };
+  }
+);
+
+server.tool(
+  "nist_cloud_list_by_source",
+  "List all cloud security guidance topics from a specific NIST publication",
+  {
+    source_id: z
+      .string()
+      .describe("Publication ID: SP800-144, SP800-210, or SP800-146"),
+  },
+  async ({ source_id }) => {
+    const topics = await listNistCloudBySource(source_id);
+    if (!topics) {
+      return {
+        content: [
+          { type: "text", text: `No topics found for source ${source_id}.` },
+        ],
+      };
+    }
+    const summary = topics
+      .map(
+        (t) =>
+          `${t.id} - ${t.title} (§${t.section}) → NIST 800-53: ${t.nist_controls.join(", ")}`
+      )
+      .join("\n");
+    return { content: [{ type: "text", text: summary }] };
+  }
+);
+
+server.tool(
+  "nist_cloud_list_sources",
+  "List all NIST cloud security publications available with topic counts",
+  {},
+  async () => {
+    const sources = await listNistCloudSources();
+    const summary = sources
+      .map(
+        (s) =>
+          `${s.id} - ${s.title} (${s.date}, ${s.topic_count} topics)`
+      )
       .join("\n");
     return { content: [{ type: "text", text: summary }] };
   }

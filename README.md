@@ -6,7 +6,7 @@ This server exists because security work constantly requires jumping between fra
 
 ## What You Can Do
 
-**Compliance lookups** — Look up any control by ID, search by keyword, or list entire control families. Covers ISO 27001:2022 (93 Annex A controls), NIST SP 800-53 Rev 5 (full catalog), and ISO 27017:2015 (cloud security).
+**Compliance lookups** — Look up any control by ID, search by keyword, or list entire control families. Covers ISO 27001:2022 (93 Annex A controls), NIST SP 800-53 Rev 5 (full catalog), ISO 27017:2015 (cloud security), and NIST cloud security guidance (SP 800-144, 800-210, 800-146).
 
 **Threat-to-control mapping** — Start from a MITRE ATT&CK technique (470 enterprise techniques) and find which NIST 800-53 controls mitigate it. Or go the other direction: pick a NIST control and see all the ATT&CK techniques it defends against.
 
@@ -18,6 +18,8 @@ NIST 800-53 is the hub that connects the frameworks:
 
 ```
 ISO 27001 ←→ NIST 800-53 ←→ MITRE ATT&CK
+                  ↕
+ISO 27017 ←→ NIST Cloud Guidance (SP 800-144, 800-210, 800-146)
 ```
 
 All cross-framework mappings come from official sources:
@@ -26,6 +28,7 @@ All cross-framework mappings come from official sources:
 |---------|--------|
 | ISO 27001 → NIST 800-53 | [NIST OLIR program](https://csrc.nist.gov/projects/olir/informative-reference-catalog/details?referenceId=99) |
 | ATT&CK → NIST 800-53 | [Center for Threat-Informed Defense](https://github.com/center-for-threat-informed-defense/mappings-explorer) |
+| ISO 27017 → NIST Cloud | NIST SP 800-144, SP 800-210 (Table 4), SP 800-146 |
 
 ## Setup
 
@@ -65,6 +68,7 @@ Add to your MCP config (`claude_desktop_config.json` or `.cursor/mcp.json`):
 "Look up ISO 27001 control A.8.24"
 "What NIST controls relate to access management?"
 "What does ISO 27017 say about virtual machine segregation?"
+"What does NIST say about hypervisor access control in the cloud?"
 "How do I defend against ATT&CK T1566 phishing?"
 "What ATT&CK techniques does NIST AC-2 mitigate?"
 "What compliance controls cover encryption?"
@@ -94,10 +98,19 @@ Add to your MCP config (`claude_desktop_config.json` or `.cursor/mcp.json`):
 
 | Tool | Description |
 |------|-------------|
-| `cloud_lookup_control` | Look up a cloud control by ID |
+| `cloud_lookup_control` | Look up a cloud control by ID with resolved NIST cloud guidance |
 | `cloud_search_controls` | Search cloud controls by keyword |
 | `cloud_list_controls_by_section` | List controls in a section |
 | `cloud_list_sections` | List all sections with control counts |
+
+### NIST Cloud Security Guidance
+
+| Tool | Description |
+|------|-------------|
+| `nist_cloud_lookup_topic` | Look up a cloud guidance topic by ID (e.g. SP800-210.3.1) |
+| `nist_cloud_search` | Search cloud guidance by keyword |
+| `nist_cloud_list_by_source` | List topics from a specific publication |
+| `nist_cloud_list_sources` | List all NIST cloud publications with topic counts |
 
 ### MITRE ATT&CK v16.1
 
@@ -117,11 +130,23 @@ All data is bundled locally in `src/data/` — no API calls at runtime.
 | File | What it is |
 |------|------------|
 | `iso-27001-controls.json` | 93 Annex A controls with official NIST mappings |
-| `iso-27017-controls.json` | Cloud controls with CSP/CSC guidance |
+| `iso-27017-controls.json` | Cloud controls with NIST guidance references |
+| `nist-cloud-guidance.json` | 30 cloud security topics from NIST SP 800-144, 800-210, 800-146 (verbatim language from source PDFs) |
 | `nist-800-53.json` | Full NIST catalog parsed from [OSCAL](https://github.com/usnistgov/oscal-content) |
 | `attack-nist-mappings.json` | ATT&CK ↔ NIST mappings parsed from CTID |
 | `sp800-53r5-to-iso-27001-mapping-OLIR.xlsx` | Raw NIST OLIR source spreadsheet |
 | `nist-to-attack-mapping-ctid.json` | Raw CTID source data |
+
+## Data Provenance
+
+All guidance text is taken directly from official publications — no AI-generated summaries.
+
+| Dataset | Source Format | How It Was Extracted |
+|---------|--------------|---------------------|
+| NIST 800-53 | Machine-readable [OSCAL JSON](https://github.com/usnistgov/oscal-content) | Parsed directly |
+| ISO 27001 → NIST mappings | [OLIR spreadsheet](https://csrc.nist.gov/projects/olir/informative-reference-catalog/details?referenceId=99) | Parsed directly |
+| ATT&CK → NIST mappings | [CTID JSON](https://github.com/center-for-threat-informed-defense/mappings-explorer) | Parsed directly |
+| NIST cloud guidance | PDFs only (SP 800-144, 800-210, 800-146) | Verbatim text extracted from source PDFs; NIST 800-53 control mappings from SP 800-210 Table 4 |
 
 ## Using with Claude Code
 
