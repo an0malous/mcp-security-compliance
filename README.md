@@ -1,4 +1,4 @@
-# MCP Security Audit Server
+# MCP Security Compliance
 
 Give your AI assistant deep knowledge of security frameworks so it can answer compliance questions, map between standards, and connect real threats to the controls that mitigate them.
 
