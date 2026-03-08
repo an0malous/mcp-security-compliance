@@ -19,6 +19,14 @@ import {
   listCloudSection,
   listCloudSections,
 } from "./tools/cloud.js";
+import {
+  lookupAttackTechnique,
+  searchAttackTechniques,
+  attackByNist,
+  nistByAttack,
+  listAttackTechniques,
+  attackSource,
+} from "./tools/attack.js";
 
 const server = new McpServer({
   name: "mcp-security-audit",
@@ -236,6 +244,137 @@ server.tool(
       .map((s) => `${s.id} - ${s.name} (${s.controlCount} controls)`)
       .join("\n");
     return { content: [{ type: "text", text: summary }] };
+  }
+);
+
+// --- MITRE ATT&CK Tools ---
+
+server.tool(
+  "attack_lookup_technique",
+  "Look up a MITRE ATT&CK technique by ID (e.g. T1059, T1566.001). Returns the technique with its mapped NIST 800-53 controls that mitigate it. Source: Center for Threat-Informed Defense.",
+  {
+    technique_id: z
+      .string()
+      .describe("ATT&CK technique ID, e.g. T1059, T1566.001"),
+  },
+  async ({ technique_id }) => {
+    const result = await lookupAttackTechnique(technique_id);
+    if (!result) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `ATT&CK technique ${technique_id} not found.`,
+          },
+        ],
+      };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  }
+);
+
+server.tool(
+  "attack_search_techniques",
+  "Search MITRE ATT&CK techniques by keyword across technique names and IDs",
+  {
+    query: z
+      .string()
+      .describe("Search keyword or phrase, e.g. 'phishing', 'credential'"),
+  },
+  async ({ query }) => {
+    const results = await searchAttackTechniques(query);
+    if (results.length === 0) {
+      return {
+        content: [
+          { type: "text", text: `No ATT&CK techniques matching "${query}".` },
+        ],
+      };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
+    };
+  }
+);
+
+server.tool(
+  "attack_list_techniques",
+  "List all top-level MITRE ATT&CK techniques (excludes sub-techniques) with their NIST control counts",
+  {},
+  async () => {
+    const techniques = await listAttackTechniques();
+    const summary = techniques
+      .map(
+        (t) =>
+          `${t.id} - ${t.name} (${t.nist_control_count} NIST controls mitigate)`
+      )
+      .join("\n");
+    return { content: [{ type: "text", text: summary }] };
+  }
+);
+
+server.tool(
+  "attack_map_from_nist",
+  "Find which ATT&CK techniques a NIST 800-53 control mitigates. Useful for understanding the threat coverage of a specific control.",
+  {
+    nist_id: z
+      .string()
+      .describe("NIST control ID, e.g. AC-2, SI-4, CM-7"),
+  },
+  async ({ nist_id }) => {
+    const result = await attackByNist(nist_id);
+    if (!result) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `No ATT&CK mappings found for NIST ${nist_id}.`,
+          },
+        ],
+      };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  }
+);
+
+server.tool(
+  "attack_map_to_nist",
+  "Find which NIST 800-53 controls mitigate a specific ATT&CK technique. Useful for building defensive coverage against a known threat.",
+  {
+    technique_id: z
+      .string()
+      .describe("ATT&CK technique ID, e.g. T1059, T1566.001"),
+  },
+  async ({ technique_id }) => {
+    const result = await nistByAttack(technique_id);
+    if (!result) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `No NIST mappings found for ATT&CK ${technique_id}.`,
+          },
+        ],
+      };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  }
+);
+
+server.tool(
+  "attack_source_info",
+  "Show metadata about the ATT&CK mapping data: version, source, coverage stats",
+  {},
+  async () => {
+    const info = await attackSource();
+    return {
+      content: [{ type: "text", text: JSON.stringify(info, null, 2) }],
+    };
   }
 );
 

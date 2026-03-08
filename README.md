@@ -1,61 +1,40 @@
 # MCP Security Audit Server
 
-An MCP server for looking up security compliance controls. Ask your AI assistant about compliance requirements, search controls by keyword, and get cross-framework mappings.
+Give your AI assistant deep knowledge of security frameworks so it can answer compliance questions, map between standards, and connect real threats to the controls that mitigate them.
 
-### Supported Frameworks
+This server exists because security work constantly requires jumping between frameworks. A developer finds a vulnerability and needs to know which compliance controls apply. An auditor reviewing NIST controls wants to understand what real-world attacks they're defending against. A team adopting ISO 27001 needs to know how their existing NIST controls map over. These lookups are tedious, spread across multiple documents, and easy to get wrong. This server makes your AI assistant the one that remembers all of it.
 
-- **ISO/IEC 27001:2022 Annex A** — All 93 controls across categories A.5–A.8
-- **ISO/IEC 27017:2015** — Cloud security controls with cloud-specific guidance for CSPs and CSCs, including CLD extended controls
-- **NIST SP 800-53 Rev 5** — Full control catalog with statements, guidance, and enhancements
+## What You Can Do
 
-## Tools
+**Compliance lookups** — Look up any control by ID, search by keyword, or list entire control families. Covers ISO 27001:2022 (93 Annex A controls), NIST SP 800-53 Rev 5 (full catalog), and ISO 27017:2015 (cloud security).
 
-| Tool | Description |
-|------|-------------|
-| `iso_lookup_control` | Look up an ISO 27001:2022 control by ID with mapped NIST guidance |
-| `iso_search_controls` | Search ISO 27001 controls by keyword |
-| `iso_list_controls_by_category` | List all controls in a category (A.5, A.6, A.7, A.8) |
-| `iso_list_categories` | List all ISO 27001 categories with control counts |
-| `nist_lookup_control` | Look up a NIST 800-53 control by ID |
-| `nist_search_controls` | Search NIST 800-53 controls by keyword |
-| `nist_list_family` | List all controls in a NIST family (AC, SC, IA, etc.) |
-| `nist_list_families` | List all NIST 800-53 families with control counts |
-| `cloud_lookup_control` | Look up an ISO 27017 cloud security control by ID |
-| `cloud_search_controls` | Search ISO 27017 cloud controls by keyword |
-| `cloud_list_controls_by_section` | List all controls in an ISO 27017 section |
-| `cloud_list_sections` | List all ISO 27017 sections with control counts |
+**Threat-to-control mapping** — Start from a MITRE ATT&CK technique (470 enterprise techniques) and find which NIST 800-53 controls mitigate it. Or go the other direction: pick a NIST control and see all the ATT&CK techniques it defends against.
 
-## Prerequisites
+**Cross-framework translation** — ISO 27001 controls resolve their NIST 800-53 mappings inline. NIST 800-53 sits at the center, connecting compliance frameworks to real-world threats.
 
-- [Bun](https://bun.sh) runtime
+## How the Mappings Work
+
+NIST 800-53 is the hub that connects the frameworks:
+
+```
+ISO 27001 ←→ NIST 800-53 ←→ MITRE ATT&CK
+```
+
+All cross-framework mappings come from official sources:
+
+| Mapping | Source |
+|---------|--------|
+| ISO 27001 → NIST 800-53 | [NIST OLIR program](https://csrc.nist.gov/projects/olir/informative-reference-catalog/details?referenceId=99) |
+| ATT&CK → NIST 800-53 | [Center for Threat-Informed Defense](https://github.com/center-for-threat-informed-defense/mappings-explorer) |
 
 ## Setup
+
+Requires [Bun](https://bun.sh).
 
 ```bash
 git clone <repo-url>
 cd mcp-security-audit
 bun install
-```
-
-## Usage
-
-### Claude Desktop
-
-Add to your config file:
-
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "mcp-security-audit": {
-      "command": "bun",
-      "args": ["run", "src/index.ts"],
-      "cwd": "/absolute/path/to/mcp-security-audit"
-    }
-  }
-}
 ```
 
 ### Claude Code
@@ -64,9 +43,9 @@ Add to your config file:
 claude mcp add mcp-security-audit -- bun run /absolute/path/to/mcp-security-audit/src/index.ts
 ```
 
-### Cursor
+### Claude Desktop / Cursor
 
-Add to `.cursor/mcp.json` in your project:
+Add to your MCP config (`claude_desktop_config.json` or `.cursor/mcp.json`):
 
 ```json
 {
@@ -80,26 +59,89 @@ Add to `.cursor/mcp.json` in your project:
 }
 ```
 
-Then restart your MCP client. The tools will be available automatically.
-
 ## Example Prompts
 
-- "Look up ISO 27001 control A.8.24"
-- "What NIST controls relate to access management?"
-- "List all controls in the NIST AC family"
-- "Search for controls about encryption"
-- "What does ISO 27017 say about virtual machine segregation?"
-- "List all cloud controls in section 9"
+```
+"Look up ISO 27001 control A.8.24"
+"What NIST controls relate to access management?"
+"What does ISO 27017 say about virtual machine segregation?"
+"How do I defend against ATT&CK T1566 phishing?"
+"What ATT&CK techniques does NIST AC-2 mitigate?"
+"What compliance controls cover encryption?"
+```
 
-## How the Data Works
+## Tools
 
-The server bundles three local JSON datasets in `src/data/`:
+### ISO 27001:2022
 
-- **`iso-27001-controls.json`** — All 93 Annex A controls from ISO/IEC 27001:2022, organized by their four categories (A.5 Organizational, A.6 People, A.7 Physical, A.8 Technological). Each control includes its ISO-to-NIST mapping.
-- **`iso-27017-controls.json`** — ISO/IEC 27017:2015 cloud security controls organized by sections 5–18, with cloud-specific guidance for cloud service providers (CSPs) and cloud service customers (CSCs). Includes CLD extended controls for virtual segregation, VM hardening, and cloud monitoring.
-- **`nist-800-53.json`** — NIST SP 800-53 Rev 5 controls with full statements, guidance text, related controls, and control enhancements.
+| Tool | Description |
+|------|-------------|
+| `iso_lookup_control` | Look up a control by ID with mapped NIST guidance |
+| `iso_search_controls` | Search controls by keyword |
+| `iso_list_controls_by_category` | List controls in a category (A.5–A.8) |
+| `iso_list_categories` | List categories with control counts |
 
-Everything runs locally — no API calls, no external dependencies at runtime. When you look up an ISO 27001 control, the server resolves its NIST mappings inline so you get both frameworks in a single response.
+### NIST SP 800-53 Rev 5
+
+| Tool | Description |
+|------|-------------|
+| `nist_lookup_control` | Look up a control by ID |
+| `nist_search_controls` | Search controls by keyword |
+| `nist_list_family` | List controls in a family (AC, SC, IA, etc.) |
+| `nist_list_families` | List all families with control counts |
+
+### ISO 27017:2015 (Cloud)
+
+| Tool | Description |
+|------|-------------|
+| `cloud_lookup_control` | Look up a cloud control by ID |
+| `cloud_search_controls` | Search cloud controls by keyword |
+| `cloud_list_controls_by_section` | List controls in a section |
+| `cloud_list_sections` | List all sections with control counts |
+
+### MITRE ATT&CK v16.1
+
+| Tool | Description |
+|------|-------------|
+| `attack_lookup_technique` | Look up a technique by ID with mapped NIST controls |
+| `attack_search_techniques` | Search techniques by keyword |
+| `attack_list_techniques` | List top-level techniques with NIST control counts |
+| `attack_map_from_nist` | NIST control → ATT&CK techniques it mitigates |
+| `attack_map_to_nist` | ATT&CK technique → NIST controls that defend against it |
+| `attack_source_info` | Mapping data version and coverage stats |
+
+## Data
+
+All data is bundled locally in `src/data/` — no API calls at runtime.
+
+| File | What it is |
+|------|------------|
+| `iso-27001-controls.json` | 93 Annex A controls with official NIST mappings |
+| `iso-27017-controls.json` | Cloud controls with CSP/CSC guidance |
+| `nist-800-53.json` | Full NIST catalog parsed from [OSCAL](https://github.com/usnistgov/oscal-content) |
+| `attack-nist-mappings.json` | ATT&CK ↔ NIST mappings parsed from CTID |
+| `sp800-53r5-to-iso-27001-mapping-OLIR.xlsx` | Raw NIST OLIR source spreadsheet |
+| `nist-to-attack-mapping-ctid.json` | Raw CTID source data |
+
+## Using with Claude Code
+
+This server is a compliance reference tool, not a vulnerability scanner or fixer. It pairs well with Claude Code's `/security-review` for documenting and contextualizing security work.
+
+To get Claude to reference compliance frameworks when documenting security fixes, add something like this to the `CLAUDE.md` in your project:
+
+```markdown
+## Security Documentation
+
+After fixing a security vulnerability, use the mcp-security-audit tools to add
+compliance context to commit messages and PR descriptions:
+
+- `attack_search_techniques` to identify the relevant ATT&CK technique
+- `attack_map_to_nist` to find which NIST 800-53 controls the fix satisfies
+- `nist_search_controls` or `iso_search_controls` for compliance requirements
+
+Reference specific control IDs (e.g. "Mitigates T1566, satisfies NIST SI-10")
+so security fixes are traceable to compliance frameworks during audits.
+```
 
 ## Development
 
