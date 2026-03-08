@@ -29,7 +29,7 @@ import {
 } from "./tools/attack.js";
 
 const server = new McpServer({
-  name: "mcp-security-audit",
+  name: "mcp-security-compliance",
   version: "0.1.0",
 });
 

@@ -33,14 +33,14 @@ Requires [Bun](https://bun.sh).
 
 ```bash
 git clone <repo-url>
-cd mcp-security-audit
+cd mcp-security-compliance
 bun install
 ```
 
 ### Claude Code
 
 ```bash
-claude mcp add mcp-security-audit -- bun run /absolute/path/to/mcp-security-audit/src/index.ts
+claude mcp add mcp-security-compliance -- bun run /absolute/path/to/mcp-security-compliance/src/index.ts
 ```
 
 ### Claude Desktop / Cursor
@@ -50,10 +50,10 @@ Add to your MCP config (`claude_desktop_config.json` or `.cursor/mcp.json`):
 ```json
 {
   "mcpServers": {
-    "mcp-security-audit": {
+    "mcp-security-compliance": {
       "command": "bun",
       "args": ["run", "src/index.ts"],
-      "cwd": "/absolute/path/to/mcp-security-audit"
+      "cwd": "/absolute/path/to/mcp-security-compliance"
     }
   }
 }
@@ -132,7 +132,7 @@ To get Claude to reference compliance frameworks when documenting security fixes
 ```markdown
 ## Security Documentation
 
-After fixing a security vulnerability, use the mcp-security-audit tools to add
+After fixing a security vulnerability, use the mcp-security-compliance tools to add
 compliance context to commit messages and PR descriptions:
 
 - `attack_search_techniques` to identify the relevant ATT&CK technique
